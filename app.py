@@ -5,11 +5,64 @@ from streamlit_autorefresh import st_autorefresh
 
 FIREBASE_URL = "https://smarthomeiot-574d7-default-rtdb.asia-southeast1.firebasedatabase.app/smart_home_history.json"
 
-st.set_page_config(page_title="Smart Home Dashboard", layout="wide")
-st.title("🏠 Smart Home Energy Efficient Dashboard")
+st.set_page_config(
+    page_title="Smart Home Dashboard",
+    page_icon="🏠",
+    layout="wide"
+)
 
-# Auto refresh every 10 seconds
 st_autorefresh(interval=10000, key="data_refresh")
+
+st.markdown("""
+<style>
+.main {
+    background-color: #f5f7fb;
+}
+
+.big-title {
+    text-align: center;
+    font-size: 42px;
+    font-weight: bold;
+    color: #1f2937;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 18px;
+    color: #6b7280;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: white;
+    padding: 22px;
+    border-radius: 18px;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+.card h3 {
+    color: #374151;
+    font-size: 18px;
+}
+
+.card h1 {
+    color: #2563eb;
+    font-size: 32px;
+}
+
+.status-box {
+    padding: 18px;
+    border-radius: 15px;
+    background: #ffffff;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("<div class='big-title'>🏠 Smart Home Energy Dashboard</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Real-time monitoring for temperature, brightness, occupancy, AC and light control</div>", unsafe_allow_html=True)
 
 response = requests.get(FIREBASE_URL, headers={"Cache-Control": "no-cache"})
 
@@ -19,7 +72,6 @@ if response.status_code == 200:
     if data:
         df = pd.DataFrame(data).T.reset_index(drop=True)
 
-        # Convert timestamp to readable time
         if "timestamp" in df.columns:
             df["time"] = pd.to_datetime(df["timestamp"], unit="s")
             df["time"] = df["time"].dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -29,48 +81,115 @@ if response.status_code == 200:
         brightness = latest.get("brightness", latest.get("light", 0))
         brightness_level = latest.get("brightness_level", "Unknown")
         light_status = latest.get("light_status", "Unknown")
+        people_count = latest.get("people_count", 0)
+        temperature = latest.get("temperature", 0)
+        ac_temp = latest.get("ac_temp", "N/A")
+
+        st.markdown("### 📌 Live Sensor Summary")
 
         col1, col2, col3, col4, col5 = st.columns(5)
 
-        col1.metric("🌡 Temperature", f"{latest.get('temperature', 0)} °C")
-        col2.metric("💡 Brightness", f"{brightness} lux")
-        col3.metric("🌗 Brightness Level", brightness_level)
-        col4.metric("🚦 Light Status", light_status)
-        col5.metric("👥 People", latest.get("people_count", 0))
+        with col1:
+            st.markdown(f"""
+            <div class="card">
+                <h3>🌡 Temperature</h3>
+                <h1>{temperature} °C</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.metric("❄ AC Temperature", f"{latest.get('ac_temp', 'N/A')} °C")
+        with col2:
+            st.markdown(f"""
+            <div class="card">
+                <h3>💡 Brightness</h3>
+                <h1>{brightness} lux</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.subheader("System Status")
-        st.write(f"Cooling Mode: {latest.get('mode', 'Unknown')}")
+        with col3:
+            st.markdown(f"""
+            <div class="card">
+                <h3>🌗 Light Level</h3>
+                <h1>{brightness_level}</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-        if latest.get("people_count", 0) == 0:
-            st.success("No motion detected.")
-        else:
-            st.info("Motion / occupancy detected.")
+        with col4:
+            st.markdown(f"""
+            <div class="card">
+                <h3>🚦 Light Status</h3>
+                <h1>{light_status}</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.subheader("🎥 Live Camera Feed")
+        with col5:
+            st.markdown(f"""
+            <div class="card">
+                <h3>👥 People</h3>
+                <h1>{people_count}</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-        video_url = latest.get("video_stream_url", "")
+        st.write("")
 
-        if video_url:
-            st.warning(
-                "If video does not show, it is because Streamlit Cloud cannot access raspberrypi.local. "
-                "Use ngrok or Cloudflare Tunnel for the Raspberry Pi video stream."
-            )
+        left, right = st.columns([1.2, 1])
 
-            st.components.v1.html(
-                f"""
-                <img src="{video_url}" width="700">
-                """,
-                height=500,
-            )
-        else:
-            st.info("No video stream URL received yet.")
+        with left:
+            st.markdown("### 📊 Sensor Graph Visualization")
 
-        st.subheader("📋 Sensor Data History")
+            if "temperature" in df.columns and "time" in df.columns:
+                temp_df = df[["time", "temperature"]].copy()
+                temp_df = temp_df.set_index("time")
+                st.line_chart(temp_df)
+
+            if "brightness" in df.columns and "time" in df.columns:
+                bright_df = df[["time", "brightness"]].copy()
+                bright_df = bright_df.set_index("time")
+                st.line_chart(bright_df)
+
+            if "people_count" in df.columns and "time" in df.columns:
+                people_df = df[["time", "people_count"]].copy()
+                people_df = people_df.set_index("time")
+                st.line_chart(people_df)
+
+        with right:
+            st.markdown("### 🧠 System Status")
+
+            if people_count == 0:
+                motion_status = "✅ No motion detected"
+            else:
+                motion_status = "⚠️ Motion / occupancy detected"
+
+            st.markdown(f"""
+            <div class="status-box">
+                <h3>❄ AC Temperature</h3>
+                <h1>{ac_temp} °C</h1>
+                <p><b>Cooling Mode:</b> {latest.get("mode", "Unknown")}</p>
+                <p><b>Motion Status:</b> {motion_status}</p>
+                <p><b>Light Status:</b> {light_status}</p>
+                <p><b>Brightness Condition:</b> {brightness_level}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("### 🎥 Live Camera Feed")
+
+            video_url = latest.get("video_stream_url", "")
+
+            if video_url:
+                st.components.v1.html(
+                    f"""
+                    <div style="background:white; padding:15px; border-radius:18px;
+                    box-shadow:0px 4px 15px rgba(0,0,0,0.08); text-align:center;">
+                        <img src="{video_url}" width="100%" style="border-radius:12px;">
+                    </div>
+                    """,
+                    height=420,
+                )
+            else:
+                st.info("No video stream URL received yet.")
+
+        st.markdown("### 📋 Latest Sensor Data History")
 
         hide_cols = ["video_stream_url", "url", "timestamp"]
-
         display_df = df.drop(columns=[c for c in hide_cols if c in df.columns])
 
         preferred_cols = [
@@ -87,20 +206,6 @@ if response.status_code == 200:
         display_df = display_df[[c for c in preferred_cols if c in display_df.columns]]
 
         st.dataframe(display_df.tail(20), use_container_width=True)
-
-        st.subheader("📊 Temperature Graph")
-
-        if "temperature" in df.columns and "time" in df.columns:
-            graph_df = df[["time", "temperature"]].copy()
-            graph_df = graph_df.set_index("time")
-            st.line_chart(graph_df)
-
-        st.subheader("📊 Brightness Graph")
-
-        if "brightness" in df.columns and "time" in df.columns:
-            brightness_df = df[["time", "brightness"]].copy()
-            brightness_df = brightness_df.set_index("time")
-            st.line_chart(brightness_df)
 
     else:
         st.warning("No data received yet.")
