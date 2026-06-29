@@ -6,12 +6,7 @@ from streamlit_autorefresh import st_autorefresh
 
 FIREBASE_URL = "https://smarthomeiot-574d7-default-rtdb.asia-southeast1.firebasedatabase.app/smart_home_history.json"
 
-st.set_page_config(
-    page_title="Smart Home Dashboard",
-    page_icon="🏠",
-    layout="wide"
-)
-
+st.set_page_config(page_title="Smart Home Dashboard", page_icon="🏠", layout="wide")
 st_autorefresh(interval=10000, key="data_refresh")
 
 st.markdown("""
@@ -20,7 +15,6 @@ st.markdown("""
     background: linear-gradient(135deg, #f8fafc, #e0f2fe);
     color: #111827;
 }
-
 .card {
     background: white;
     padding: 22px;
@@ -29,31 +23,20 @@ st.markdown("""
     text-align: center;
     border: 1px solid #e5e7eb;
 }
-
-.card h3 {
-    color: #374151;
-    font-size: 17px;
-}
-
-.card h1 {
-    color: #2563eb;
-    font-size: 30px;
-}
-
+.card h3 { color: #374151; font-size: 17px; }
+.card h1 { color: #2563eb; font-size: 30px; }
 .title {
     text-align: center;
     font-size: 42px;
     font-weight: 800;
     color: #1e3a8a;
 }
-
 .subtitle {
     text-align: center;
     color: #475569;
     font-size: 18px;
     margin-bottom: 30px;
 }
-
 .status-box {
     background: white;
     padding: 22px;
@@ -204,32 +187,38 @@ if response.status_code == 200:
 
             st.markdown("### 🎥 Live Camera Feed")
 
-video_url = latest.get("video_stream_url", "")
+            video_url = str(latest.get("video_stream_url", "")).strip()
 
-if video_url:
-    st.markdown(f"### 🎥 Live Camera Feed")
-    st.markdown(f"[🔗 Open Camera Stream in New Tab]({video_url})")
+            if video_url:
+                if not video_url.endswith("/video_feed"):
+                    video_url = video_url.rstrip("/") + "/video_feed"
 
-    try:
-        st.image(video_url, caption="Live Camera Feed", use_container_width=True)
-    except:
-        st.warning(
-            "Unable to display video inside dashboard. "
-            "Please click 'Open Camera Stream in New Tab'."
-        )
+                st.markdown(f"[🔗 Open Camera Stream in New Tab]({video_url})")
+                st.caption(f"Current video URL: {video_url}")
 
-    else:
-        st.info("No video stream URL received yet.")
+                try:
+                    st.image(video_url, caption="Live Camera Feed", use_container_width=True)
+                except Exception:
+                    st.warning("Video cannot be shown using st.image(). Trying HTML view...")
+
+                st.components.v1.html(
+                    f"""
+                    <div style="background:white; padding:15px; border-radius:18px;
+                    box-shadow:0px 4px 16px rgba(0,0,0,0.08); text-align:center;">
+                        <img src="{video_url}" width="100%" style="border-radius:12px;">
+                        <p style="font-size:13px; color:#64748b;">
+                            If the video does not appear here, click the link above to open it in a new tab.
+                        </p>
+                    </div>
+                    """,
+                    height=460,
+                )
+            else:
+                st.info("No video stream URL received yet.")
 
         st.markdown("### 📋 Sensor Data History")
 
-        hide_cols = [
-            "video_stream_url",
-            "url",
-            "timestamp",
-            "light_numeric"
-        ]
-
+        hide_cols = ["video_stream_url", "url", "timestamp", "light_numeric"]
         display_df = df.drop(columns=[c for c in hide_cols if c in df.columns])
 
         preferred_cols = [
@@ -244,7 +233,6 @@ if video_url:
         ]
 
         display_df = display_df[[c for c in preferred_cols if c in display_df.columns]]
-
         st.dataframe(display_df.tail(20), use_container_width=True)
 
     else:
