@@ -196,11 +196,6 @@ if response.status_code == 200:
                 st.markdown(f"[🔗 Open Camera Stream in New Tab]({video_url})")
                 st.caption(f"Current video URL: {video_url}")
 
-                try:
-                    st.image(video_url, caption="Live Camera Feed", use_container_width=True)
-                except Exception:
-                    st.warning("Video cannot be shown using st.image(). Trying HTML view...")
-
                 st.components.v1.html(
                     f"""
                     <div style="background:white; padding:15px; border-radius:18px;
