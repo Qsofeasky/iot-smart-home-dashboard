@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+import time
 from streamlit_autorefresh import st_autorefresh
 
 FIREBASE_URL = "https://smarthomeiot-574d7-default-rtdb.asia-southeast1.firebasedatabase.app/smart_home_history.json"
@@ -66,7 +67,7 @@ st.markdown("""
 st.markdown("<div class='title'>🏠 Smart Home Energy Dashboard</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>Real-time temperature, brightness, occupancy and AI control prediction</div>", unsafe_allow_html=True)
 
-response = requests.get(FIREBASE_URL, headers={"Cache-Control": "no-cache"})
+response = requests.get(FIREBASE_URL + f"?t={int(time.time())}")
 
 if response.status_code == 200:
     data = response.json()
@@ -75,18 +76,37 @@ if response.status_code == 200:
         df = pd.DataFrame(data).T.reset_index(drop=True)
 
         if "timestamp" in df.columns:
+            df = df.sort_values(by="timestamp")
             df["time"] = pd.to_datetime(df["timestamp"], unit="s")
             df["time"] = df["time"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
-        df["brightness"] = df.get("brightness", df.get("light", 0))
+        if "brightness" not in df.columns:
+            df["brightness"] = df.get("light", 0)
+
+        def get_brightness_level(value):
+            try:
+                value = float(value)
+            except:
+                value = 0
+
+            if value < 300:
+                return "DARK"
+            elif value < 600:
+                return "DIM"
+            else:
+                return "BRIGHT"
+
+        df["brightness_level"] = df["brightness"].apply(get_brightness_level)
 
         if "light_status" in df.columns:
-            df["light_numeric"] = df["light_status"].apply(lambda x: 1 if str(x).upper() == "ON" else 0)
+            df["light_numeric"] = df["light_status"].apply(
+                lambda x: 1 if str(x).upper() == "ON" else 0
+            )
 
         latest = df.iloc[-1]
 
         temperature = latest.get("temperature", 0)
-        brightness = latest.get("brightness", latest.get("light", 0))
+        brightness = latest.get("brightness", 0)
         brightness_level = latest.get("brightness_level", "Unknown")
         people_count = latest.get("people_count", 0)
         light_status = latest.get("light_status", "Unknown")
@@ -113,7 +133,7 @@ if response.status_code == 200:
         with col3:
             st.markdown(f"""
             <div class="card">
-                <h3>🌗 Bright/Dark</h3>
+                <h3>🌗 Brightness Level</h3>
                 <h1>{brightness_level}</h1>
             </div>
             """, unsafe_allow_html=True)
@@ -187,21 +207,32 @@ if response.status_code == 200:
             video_url = latest.get("video_stream_url", "")
 
             if video_url:
+                st.markdown(f"[🔗 Open Camera Stream]({video_url})")
+
                 st.components.v1.html(
                     f"""
                     <div style="background:white; padding:15px; border-radius:18px;
                     box-shadow:0px 4px 16px rgba(0,0,0,0.08); text-align:center;">
                         <img src="{video_url}" width="100%" style="border-radius:12px;">
+                        <p style="font-size:13px; color:#64748b;">
+                            If the video does not appear, click the Open Camera Stream link above.
+                        </p>
                     </div>
                     """,
-                    height=420,
+                    height=460,
                 )
             else:
                 st.info("No video stream URL received yet.")
 
         st.markdown("### 📋 Sensor Data History")
 
-        hide_cols = ["video_stream_url", "url", "timestamp", "light_numeric"]
+        hide_cols = [
+            "video_stream_url",
+            "url",
+            "timestamp",
+            "light_numeric"
+        ]
+
         display_df = df.drop(columns=[c for c in hide_cols if c in df.columns])
 
         preferred_cols = [
@@ -216,6 +247,7 @@ if response.status_code == 200:
         ]
 
         display_df = display_df[[c for c in preferred_cols if c in display_df.columns]]
+
         st.dataframe(display_df.tail(20), use_container_width=True)
 
     else:
