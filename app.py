@@ -204,25 +204,22 @@ if response.status_code == 200:
 
             st.markdown("### 🎥 Live Camera Feed")
 
-            video_url = latest.get("video_stream_url", "")
+video_url = latest.get("video_stream_url", "")
 
-            if video_url:
-                st.markdown(f"[🔗 Open Camera Stream]({video_url})")
+if video_url:
+    st.markdown(f"### 🎥 Live Camera Feed")
+    st.markdown(f"[🔗 Open Camera Stream in New Tab]({video_url})")
 
-                st.components.v1.html(
-                    f"""
-                    <div style="background:white; padding:15px; border-radius:18px;
-                    box-shadow:0px 4px 16px rgba(0,0,0,0.08); text-align:center;">
-                        <img src="{video_url}" width="100%" style="border-radius:12px;">
-                        <p style="font-size:13px; color:#64748b;">
-                            If the video does not appear, click the Open Camera Stream link above.
-                        </p>
-                    </div>
-                    """,
-                    height=460,
-                )
-            else:
-                st.info("No video stream URL received yet.")
+    try:
+        st.image(video_url, caption="Live Camera Feed", use_container_width=True)
+    except:
+        st.warning(
+            "Unable to display video inside dashboard. "
+            "Please click 'Open Camera Stream in New Tab'."
+        )
+
+    else:
+        st.info("No video stream URL received yet.")
 
         st.markdown("### 📋 Sensor Data History")
 
