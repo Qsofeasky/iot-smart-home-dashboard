@@ -16,11 +16,7 @@ st.markdown("""
     background: linear-gradient(135deg, #edf6ff 0%, #f8fafc 45%, #ecfeff 100%);
     color: #0f172a;
 }
-
-.block-container {
-    padding-top: 1.5rem;
-}
-
+.block-container { padding-top: 1.5rem; }
 .hero {
     background: linear-gradient(135deg, #1d4ed8, #06b6d4);
     padding: 32px;
@@ -30,17 +26,8 @@ st.markdown("""
     box-shadow: 0 12px 30px rgba(37,99,235,0.25);
     margin-bottom: 25px;
 }
-
-.hero h1 {
-    font-size: 46px;
-    margin-bottom: 8px;
-}
-
-.hero p {
-    font-size: 18px;
-    opacity: 0.95;
-}
-
+.hero h1 { font-size: 46px; margin-bottom: 8px; }
+.hero p { font-size: 18px; opacity: 0.95; }
 .smart-home-box {
     background: white;
     padding: 24px;
@@ -49,33 +36,6 @@ st.markdown("""
     border: 1px solid #e2e8f0;
     margin-bottom: 22px;
 }
-
-.room-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-}
-
-.room {
-    background: #f8fafc;
-    border-radius: 18px;
-    padding: 18px;
-    text-align: center;
-    border: 1px solid #e2e8f0;
-}
-
-.room h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #1e293b;
-}
-
-.room p {
-    margin: 6px 0 0 0;
-    color: #64748b;
-    font-size: 14px;
-}
-
 .card {
     background: rgba(255,255,255,0.96);
     padding: 22px;
@@ -84,19 +44,8 @@ st.markdown("""
     text-align: center;
     border: 1px solid #e2e8f0;
 }
-
-.card h3 {
-    color: #475569;
-    font-size: 16px;
-    margin-bottom: 8px;
-}
-
-.card h1 {
-    color: #1d4ed8;
-    font-size: 32px;
-    margin: 0;
-}
-
+.card h3 { color: #475569; font-size: 16px; margin-bottom: 8px; }
+.card h1 { color: #1d4ed8; font-size: 32px; margin: 0; }
 .panel {
     background: rgba(255,255,255,0.96);
     padding: 24px;
@@ -105,7 +54,6 @@ st.markdown("""
     border: 1px solid #e2e8f0;
     margin-bottom: 20px;
 }
-
 .status-active {
     background: #dcfce7;
     color: #166534;
@@ -113,7 +61,6 @@ st.markdown("""
     border-radius: 999px;
     font-weight: 700;
 }
-
 .status-standby {
     background: #f1f5f9;
     color: #475569;
@@ -127,7 +74,7 @@ st.markdown("""
 st.markdown("""
 <div class="hero">
     <h1>🏠 Smart Home Energy Dashboard</h1>
-    <p>AI-powered smart home monitoring for temperature, brightness, occupancy, AC and light control</p>
+    <p>AI-powered monitoring for temperature, brightness, occupancy, AC prediction and light control</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -188,19 +135,22 @@ if response.status_code == 200:
             mode_class = "status-active"
             mode_badge = "🟢 Active"
             motion_status = "Motion / occupancy detected"
-            occupancy_display = "Occupied"
         else:
             system_mode = "Standby Mode"
             mode_class = "status-standby"
             mode_badge = "⚪ Standby"
             motion_status = "No motion detected"
-            occupancy_display = "Empty Room"
 
-        st.markdown(f"""
+        st.markdown("""
         <div class="smart-home-box">
             <h2>🏡 Smart Home Application Overview</h2>
-            <p>This dashboard monitors a smart home room using IoT sensors, YOLO camera detection, and AI-based energy control.</p>
-        
+            <p>
+            This dashboard monitors a smart home environment using IoT sensors, YOLO-based human detection,
+            and AI-driven energy management. The system automatically controls lighting and air conditioning
+            based on occupancy, room temperature, and ambient brightness to improve energy efficiency.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
         col1, col2, col3, col4, col5 = st.columns(5)
 
