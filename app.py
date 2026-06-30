@@ -13,31 +13,90 @@ st_autorefresh(interval=10000, key="data_refresh")
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg, #eef6ff 0%, #f8fafc 45%, #ecfeff 100%);
+    background: linear-gradient(135deg, #edf6ff 0%, #f8fafc 45%, #ecfeff 100%);
     color: #0f172a;
 }
-.block-container { padding-top: 2rem; }
+
+.block-container {
+    padding-top: 1.5rem;
+}
+
 .hero {
-    background: linear-gradient(135deg, #2563eb, #06b6d4);
-    padding: 30px;
-    border-radius: 28px;
+    background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+    padding: 32px;
+    border-radius: 30px;
     color: white;
     text-align: center;
     box-shadow: 0 12px 30px rgba(37,99,235,0.25);
     margin-bottom: 25px;
 }
-.hero h1 { font-size: 46px; margin-bottom: 8px; }
-.hero p { font-size: 18px; opacity: 0.95; }
+
+.hero h1 {
+    font-size: 46px;
+    margin-bottom: 8px;
+}
+
+.hero p {
+    font-size: 18px;
+    opacity: 0.95;
+}
+
+.smart-home-box {
+    background: white;
+    padding: 24px;
+    border-radius: 26px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 22px;
+}
+
+.room-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+
+.room {
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 18px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.room h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1e293b;
+}
+
+.room p {
+    margin: 6px 0 0 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
 .card {
-    background: rgba(255,255,255,0.95);
+    background: rgba(255,255,255,0.96);
     padding: 22px;
     border-radius: 22px;
     box-shadow: 0 8px 22px rgba(15,23,42,0.08);
     text-align: center;
     border: 1px solid #e2e8f0;
 }
-.card h3 { color: #475569; font-size: 16px; margin-bottom: 8px; }
-.card h1 { color: #1d4ed8; font-size: 32px; margin: 0; }
+
+.card h3 {
+    color: #475569;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.card h1 {
+    color: #1d4ed8;
+    font-size: 32px;
+    margin: 0;
+}
+
 .panel {
     background: rgba(255,255,255,0.96);
     padding: 24px;
@@ -46,13 +105,29 @@ st.markdown("""
     border: 1px solid #e2e8f0;
     margin-bottom: 20px;
 }
+
+.status-active {
+    background: #dcfce7;
+    color: #166534;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.status-standby {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="hero">
     <h1>🏠 Smart Home Energy Dashboard</h1>
-    <p>Real-time temperature, brightness, occupancy, AC prediction and light control</p>
+    <p>AI-powered smart home monitoring for temperature, brightness, occupancy, AC and light control</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -65,6 +140,8 @@ if response.status_code == 200:
         df = pd.DataFrame(data).T.reset_index(drop=True)
 
         if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
+            df = df.dropna(subset=["timestamp"])
             df = df.sort_values(by="timestamp")
             df["datetime"] = pd.to_datetime(df["timestamp"], unit="s")
             df["readable_time"] = df["datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -72,12 +149,14 @@ if response.status_code == 200:
         if "brightness" not in df.columns:
             df["brightness"] = df.get("light", 0)
 
-        def get_brightness_level(value):
-            try:
-                value = float(value)
-            except:
-                value = 0
+        df["temperature"] = pd.to_numeric(df.get("temperature", 0), errors="coerce").fillna(0)
+        df["brightness"] = pd.to_numeric(df.get("brightness", 0), errors="coerce").fillna(0)
+        df["people_count"] = pd.to_numeric(df.get("people_count", 0), errors="coerce").fillna(0).astype(int)
 
+        if "ac_temp" in df.columns:
+            df["ac_temp"] = pd.to_numeric(df["ac_temp"], errors="coerce")
+
+        def get_brightness_level(value):
             if value < 300:
                 return "DARK"
             elif value < 600:
@@ -91,42 +170,69 @@ if response.status_code == 200:
             df["light_numeric"] = df["light_status"].apply(
                 lambda x: 1 if str(x).upper() == "ON" else 0
             )
+        else:
+            df["light_status"] = "Unknown"
+            df["light_numeric"] = 0
 
         latest = df.iloc[-1]
 
         temperature = latest.get("temperature", 0)
         brightness = latest.get("brightness", 0)
         brightness_level = latest.get("brightness_level", "Unknown")
-        people_count = latest.get("people_count", 0)
+        people_count = int(latest.get("people_count", 0))
         light_status = latest.get("light_status", "Unknown")
         ac_temp = latest.get("ac_temp", "N/A")
 
-        try:
-            people_count_int = int(people_count)
-        except:
-            people_count_int = 0
-
-        if people_count_int > 0:
+        if people_count > 0:
             system_mode = "AI Control Active"
+            mode_class = "status-active"
             mode_badge = "🟢 Active"
-            motion_status = "⚠️ Motion / occupancy detected"
+            motion_status = "Motion / occupancy detected"
+            occupancy_display = "Occupied"
         else:
             system_mode = "Standby Mode"
+            mode_class = "status-standby"
             mode_badge = "⚪ Standby"
-            motion_status = "✅ No motion detected"
+            motion_status = "No motion detected"
+            occupancy_display = "Empty Room"
+
+        st.markdown(f"""
+        <div class="smart-home-box">
+            <h2>🏡 Smart Home Application Overview</h2>
+            <p>This dashboard monitors a smart home room using IoT sensors, YOLO camera detection, and AI-based energy control.</p>
+            <div class="room-grid">
+                <div class="room">
+                    <h3>🌡 Climate</h3>
+                    <p>{temperature} °C</p>
+                </div>
+                <div class="room">
+                    <h3>💡 Lighting</h3>
+                    <p>{brightness_level} / {light_status}</p>
+                </div>
+                <div class="room">
+                    <h3>👥 Occupancy</h3>
+                    <p>{occupancy_display}</p>
+                </div>
+                <div class="room">
+                    <h3>🤖 AI Control</h3>
+                    <p>{system_mode}</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         col1, col2, col3, col4, col5 = st.columns(5)
 
         with col1:
-            st.markdown(f"<div class='card'><h3>🌡 Temperature</h3><h1>{temperature} °C</h1></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='card'><h3>🌡 Temperature</h3><h1>{temperature:.1f} °C</h1></div>", unsafe_allow_html=True)
         with col2:
-            st.markdown(f"<div class='card'><h3>💡 Brightness</h3><h1>{brightness} lux</h1></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='card'><h3>💡 Brightness</h3><h1>{brightness:.1f} lux</h1></div>", unsafe_allow_html=True)
         with col3:
             st.markdown(f"<div class='card'><h3>🌗 Light Level</h3><h1>{brightness_level}</h1></div>", unsafe_allow_html=True)
         with col4:
             st.markdown(f"<div class='card'><h3>🚦 Light Status</h3><h1>{light_status}</h1></div>", unsafe_allow_html=True)
         with col5:
-            st.markdown(f"<div class='card'><h3>👥 People</h3><h1>{people_count_int}</h1></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='card'><h3>👥 People</h3><h1>{people_count}</h1></div>", unsafe_allow_html=True)
 
         st.write("")
 
@@ -135,34 +241,28 @@ if response.status_code == 200:
         with left:
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
             st.markdown("### 🌡 Temperature Over Time")
-
-            if "temperature" in df.columns and "readable_time" in df.columns:
-                temp_fig = px.line(
-                    df.tail(50),
-                    x="readable_time",
-                    y="temperature",
-                    markers=True,
-                    labels={"readable_time": "Time", "temperature": "Temperature (°C)"}
-                )
-                temp_fig.update_layout(template="plotly_white", height=340)
-                st.plotly_chart(temp_fig, use_container_width=True)
-
+            temp_fig = px.line(
+                df.tail(50),
+                x="readable_time",
+                y="temperature",
+                markers=True,
+                labels={"readable_time": "Time", "temperature": "Temperature (°C)"}
+            )
+            temp_fig.update_layout(template="plotly_white", height=340)
+            st.plotly_chart(temp_fig, use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
             st.markdown("### 💡 Brightness Over Time")
-
-            if "brightness" in df.columns and "readable_time" in df.columns:
-                bright_fig = px.line(
-                    df.tail(50),
-                    x="readable_time",
-                    y="brightness",
-                    markers=True,
-                    labels={"readable_time": "Time", "brightness": "Brightness (lux)"}
-                )
-                bright_fig.update_layout(template="plotly_white", height=340)
-                st.plotly_chart(bright_fig, use_container_width=True)
-
+            bright_fig = px.line(
+                df.tail(50),
+                x="readable_time",
+                y="brightness",
+                markers=True,
+                labels={"readable_time": "Time", "brightness": "Brightness (lux)"}
+            )
+            bright_fig.update_layout(template="plotly_white", height=340)
+            st.plotly_chart(bright_fig, use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
@@ -174,7 +274,7 @@ if response.status_code == 200:
             if "light_numeric" in df.columns:
                 control_cols.append("light_numeric")
 
-            if control_cols and "readable_time" in df.columns:
+            if control_cols:
                 control_long = df.tail(50).melt(
                     id_vars="readable_time",
                     value_vars=control_cols,
@@ -200,10 +300,12 @@ if response.status_code == 200:
             st.markdown(f"""
             <div class="panel">
                 <h3>🧠 Current System Status</h3>
+                <p><span class="{mode_class}">{mode_badge}</span></p>
                 <h2>❄ AC Prediction: {ac_temp} °C</h2>
-                <p><b>Mode:</b> {system_mode} {mode_badge}</p>
+                <p><b>Mode:</b> {system_mode}</p>
                 <p><b>Motion:</b> {motion_status}</p>
-                <p><b>Brightness:</b> {brightness} lux</p>
+                <p><b>People Detected:</b> {people_count}</p>
+                <p><b>Brightness:</b> {brightness:.1f} lux</p>
                 <p><b>Brightness Condition:</b> {brightness_level}</p>
                 <p><b>Light Prediction:</b> {light_status}</p>
             </div>
@@ -239,8 +341,9 @@ if response.status_code == 200:
         st.markdown("<div class='panel'>", unsafe_allow_html=True)
         st.markdown("### 📋 Latest Sensor Data History")
 
+        display_df = df.copy()
         hide_cols = ["video_stream_url", "url", "timestamp", "light_numeric", "datetime"]
-        display_df = df.drop(columns=[c for c in hide_cols if c in df.columns])
+        display_df = display_df.drop(columns=[c for c in hide_cols if c in display_df.columns])
 
         preferred_cols = [
             "readable_time",
