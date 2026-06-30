@@ -16,7 +16,11 @@ st.markdown("""
     background: linear-gradient(135deg, #edf6ff 0%, #f8fafc 45%, #ecfeff 100%);
     color: #0f172a;
 }
-.block-container { padding-top: 1.5rem; }
+
+.block-container { 
+    padding-top: 1.5rem; 
+}
+
 .hero {
     background: linear-gradient(135deg, #1d4ed8, #06b6d4);
     padding: 32px;
@@ -26,8 +30,17 @@ st.markdown("""
     box-shadow: 0 12px 30px rgba(37,99,235,0.25);
     margin-bottom: 25px;
 }
-.hero h1 { font-size: 46px; margin-bottom: 8px; }
-.hero p { font-size: 18px; opacity: 0.95; }
+
+.hero h1 { 
+    font-size: 46px; 
+    margin-bottom: 8px; 
+}
+
+.hero p { 
+    font-size: 18px; 
+    opacity: 0.95; 
+}
+
 .smart-home-box, .panel {
     background: rgba(255,255,255,0.96);
     padding: 24px;
@@ -36,6 +49,16 @@ st.markdown("""
     border: 1px solid #e2e8f0;
     margin-bottom: 20px;
 }
+
+.panel-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #dbeafe;
+    padding-bottom: 10px;
+}
+
 .card {
     background: rgba(255,255,255,0.96);
     padding: 22px;
@@ -44,8 +67,19 @@ st.markdown("""
     text-align: center;
     border: 1px solid #e2e8f0;
 }
-.card h3 { color: #475569; font-size: 16px; margin-bottom: 8px; }
-.card h1 { color: #1d4ed8; font-size: 30px; margin: 0; }
+
+.card h3 { 
+    color: #475569; 
+    font-size: 16px; 
+    margin-bottom: 8px; 
+}
+
+.card h1 { 
+    color: #1d4ed8; 
+    font-size: 30px; 
+    margin: 0; 
+}
+
 .status-active {
     background: #dcfce7;
     color: #166534;
@@ -53,6 +87,7 @@ st.markdown("""
     border-radius: 999px;
     font-weight: 700;
 }
+
 .status-standby {
     background: #f1f5f9;
     color: #475569;
@@ -146,7 +181,7 @@ if response.status_code == 200:
 
         st.markdown("""
         <div class="smart-home-box">
-            <h2>🏡 Smart Home Application Overview</h2>
+            <div class="panel-title">🏡 Smart Home Application Overview</div>
             <p>
             This dashboard monitors a smart home environment using IoT sensors, YOLO-based human detection,
             and AI-driven energy management. The system automatically controls lighting and air conditioning
@@ -174,7 +209,8 @@ if response.status_code == 200:
 
         with left:
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
-            st.markdown("### 🌡 Temperature Over Time")
+            st.markdown("<div class='panel-title'>🌡 Temperature Monitoring</div>", unsafe_allow_html=True)
+
             temp_fig = px.line(
                 df.tail(50),
                 x="readable_time",
@@ -184,10 +220,12 @@ if response.status_code == 200:
             )
             temp_fig.update_layout(template="plotly_white", height=340)
             st.plotly_chart(temp_fig, use_container_width=True)
+
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
-            st.markdown("### 💡 Brightness Over Time")
+            st.markdown("<div class='panel-title'>💡 Brightness Monitoring</div>", unsafe_allow_html=True)
+
             bright_fig = px.line(
                 df.tail(50),
                 x="readable_time",
@@ -197,10 +235,12 @@ if response.status_code == 200:
             )
             bright_fig.update_layout(template="plotly_white", height=340)
             st.plotly_chart(bright_fig, use_container_width=True)
+
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
-            st.markdown("### 👥 People Detection Over Time")
+            st.markdown("<div class='panel-title'>👥 Occupancy Monitoring</div>", unsafe_allow_html=True)
+
             people_fig = px.line(
                 df.tail(50),
                 x="readable_time",
@@ -210,10 +250,11 @@ if response.status_code == 200:
             )
             people_fig.update_layout(template="plotly_white", height=340)
             st.plotly_chart(people_fig, use_container_width=True)
+
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
-            st.markdown("### 🤖 Prediction for Control Over Time")
+            st.markdown("<div class='panel-title'>🤖 AI Energy Control Prediction</div>", unsafe_allow_html=True)
 
             control_cols = []
             if "ac_temp" in df.columns:
@@ -246,7 +287,7 @@ if response.status_code == 200:
         with right:
             st.markdown(f"""
             <div class="panel">
-                <h3>🧠 Current System Status</h3>
+                <div class="panel-title">🧠 Smart Home Status</div>
                 <p><span class="{mode_class}">{mode_badge}</span></p>
                 <h2>❄ AC Prediction: {ac_temp} °C</h2>
                 <p><b>Mode:</b> {system_mode}</p>
@@ -260,7 +301,7 @@ if response.status_code == 200:
             """, unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
-            st.markdown("### 🎥 Live Camera Feed")
+            st.markdown("<div class='panel-title'>🎥 Real-Time Camera Monitoring</div>", unsafe_allow_html=True)
 
             video_url = str(latest.get("video_stream_url", "")).strip()
 
@@ -301,7 +342,7 @@ if response.status_code == 200:
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
-            st.markdown("### 🏠 Occupancy Distribution")
+            st.markdown("<div class='panel-title'>🏠 Room Occupancy Analysis</div>", unsafe_allow_html=True)
 
             occupancy_df = df["occupancy_status"].value_counts().reset_index()
             occupancy_df.columns = ["Status", "Count"]
@@ -314,10 +355,11 @@ if response.status_code == 200:
             )
             occ_fig.update_layout(template="plotly_white", height=300)
             st.plotly_chart(occ_fig, use_container_width=True)
+
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
-            st.markdown("### 🌗 Brightness Distribution")
+            st.markdown("<div class='panel-title'>🌗 Brightness Condition Analysis</div>", unsafe_allow_html=True)
 
             brightness_df = df["brightness_level"].value_counts().reset_index()
             brightness_df.columns = ["Brightness Level", "Count"]
@@ -330,12 +372,14 @@ if response.status_code == 200:
             )
             bright_dist_fig.update_layout(template="plotly_white", height=300)
             st.plotly_chart(bright_dist_fig, use_container_width=True)
+
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='panel'>", unsafe_allow_html=True)
-        st.markdown("### 📋 Latest Sensor Data History")
+        st.markdown("<div class='panel-title'>📋 Historical Sensor Records</div>", unsafe_allow_html=True)
 
         display_df = df.copy()
+
         hide_cols = [
             "video_stream_url",
             "url",
@@ -362,6 +406,7 @@ if response.status_code == 200:
         display_df = display_df.rename(columns={"readable_time": "time"})
 
         st.dataframe(display_df.tail(20), use_container_width=True)
+
         st.markdown("</div>", unsafe_allow_html=True)
 
     else:
