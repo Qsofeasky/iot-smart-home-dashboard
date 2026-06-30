@@ -4,11 +4,9 @@ import pandas as pd
 import time
 import plotly.express as px
 
-
 FIREBASE_URL = "https://smarthomeiot-574d7-default-rtdb.asia-southeast1.firebasedatabase.app/smart_home_history.json"
 
 st.set_page_config(page_title="Smart Home Dashboard", page_icon="🏠", layout="wide")
-
 
 st.markdown("""
 <style>
@@ -114,35 +112,34 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-@st.fragment(run_every="10s")
 
-def live_dashboard():
-
+def render_live_dashboard():
+    """Fetch Firebase data and redraw only this live dashboard section."""
     response = requests.get(FIREBASE_URL + f"?t={int(time.time())}")
-
+    
     if response.status_code == 200:
         data = response.json()
-
+    
         if data:
             df = pd.DataFrame(data).T.reset_index(drop=True)
-
+    
             if "timestamp" in df.columns:
                 df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
                 df = df.dropna(subset=["timestamp"])
                 df = df.sort_values(by="timestamp")
                 df["datetime"] = pd.to_datetime(df["timestamp"], unit="s")
                 df["readable_time"] = df["datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
-
+    
             if "brightness" not in df.columns:
                 df["brightness"] = df.get("light", 0)
-
+    
             df["temperature"] = pd.to_numeric(df.get("temperature", 0), errors="coerce").fillna(0)
             df["brightness"] = pd.to_numeric(df.get("brightness", 0), errors="coerce").fillna(0)
             df["people_count"] = pd.to_numeric(df.get("people_count", 0), errors="coerce").fillna(0).astype(int)
-
+    
             if "ac_temp" in df.columns:
                 df["ac_temp"] = pd.to_numeric(df["ac_temp"], errors="coerce")
-
+    
             def get_brightness_level(value):
                 if value < 300:
                     return "DARK"
@@ -150,9 +147,9 @@ def live_dashboard():
                     return "DIM"
                 else:
                     return "BRIGHT"
-
+    
             df["brightness_level"] = df["brightness"].apply(get_brightness_level)
-
+    
             if "light_status" in df.columns:
                 df["light_numeric"] = df["light_status"].apply(
                     lambda x: 1 if str(x).upper() == "ON" else 0
@@ -160,20 +157,20 @@ def live_dashboard():
             else:
                 df["light_status"] = "Unknown"
                 df["light_numeric"] = 0
-
+    
             df["occupancy_status"] = df["people_count"].apply(
                 lambda x: "Occupied" if x > 0 else "Empty"
             )
-
+    
             latest = df.iloc[-1]
-
+    
             temperature = latest.get("temperature", 0)
             brightness = latest.get("brightness", 0)
             brightness_level = latest.get("brightness_level", "Unknown")
             people_count = int(latest.get("people_count", 0))
             light_status = latest.get("light_status", "Unknown")
             ac_temp = latest.get("ac_temp", "N/A")
-
+    
             if people_count > 0:
                 system_mode = "AI Control Active"
                 mode_class = "status-active"
@@ -184,14 +181,14 @@ def live_dashboard():
                 mode_class = "status-standby"
                 mode_badge = "⚪ Standby"
                 motion_status = "No motion detected"
-
+    
             if temperature < 24:
                 comfort_status = "❄ Cold"
             elif temperature <= 28:
                 comfort_status = "😊 Comfortable"
             else:
                 comfort_status = "🔥 Hot"
-
+    
             st.markdown("""
             <div class="smart-home-box">
                 <div class="panel-title">🏡 Smart Home Application Overview</div>
@@ -202,9 +199,9 @@ def live_dashboard():
                 </p>
             </div>
             """, unsafe_allow_html=True)
-
+    
             col1, col2, col3, col4, col5 = st.columns(5)
-
+    
             with col1:
                 st.markdown(f"<div class='card'><h3>🌡 Temperature</h3><h1>{temperature:.1f} °C</h1></div>", unsafe_allow_html=True)
             with col2:
@@ -215,15 +212,15 @@ def live_dashboard():
                 st.markdown(f"<div class='card'><h3>🚦 Light Status</h3><h1>{light_status}</h1></div>", unsafe_allow_html=True)
             with col5:
                 st.markdown(f"<div class='card'><h3>👥 People</h3><h1>{people_count}</h1></div>", unsafe_allow_html=True)
-
+    
             st.write("")
-
+    
             left, right = st.columns([1.45, 1])
-
+    
             with left:
                 st.markdown("<div class='panel'>", unsafe_allow_html=True)
                 st.markdown("<div class='panel-title'>🌡 Temperature Monitoring</div>", unsafe_allow_html=True)
-
+    
                 temp_fig = px.line(
                     df.tail(50),
                     x="readable_time",
@@ -233,12 +230,12 @@ def live_dashboard():
                 )
                 temp_fig.update_layout(template="plotly_white", height=340)
                 st.plotly_chart(temp_fig, use_container_width=True)
-
+    
                 st.markdown("</div>", unsafe_allow_html=True)
-
+    
                 st.markdown("<div class='panel'>", unsafe_allow_html=True)
                 st.markdown("<div class='panel-title'>💡 Brightness Monitoring</div>", unsafe_allow_html=True)
-
+    
                 bright_fig = px.line(
                     df.tail(50),
                     x="readable_time",
@@ -248,12 +245,12 @@ def live_dashboard():
                 )
                 bright_fig.update_layout(template="plotly_white", height=340)
                 st.plotly_chart(bright_fig, use_container_width=True)
-
+    
                 st.markdown("</div>", unsafe_allow_html=True)
-
+    
                 st.markdown("<div class='panel'>", unsafe_allow_html=True)
                 st.markdown("<div class='panel-title'>👥 Occupancy Monitoring</div>", unsafe_allow_html=True)
-
+    
                 people_fig = px.line(
                     df.tail(50),
                     x="readable_time",
@@ -263,18 +260,18 @@ def live_dashboard():
                 )
                 people_fig.update_layout(template="plotly_white", height=340)
                 st.plotly_chart(people_fig, use_container_width=True)
-
+    
                 st.markdown("</div>", unsafe_allow_html=True)
-
+    
                 st.markdown("<div class='panel'>", unsafe_allow_html=True)
                 st.markdown("<div class='panel-title'>🤖 AI Energy Control Prediction</div>", unsafe_allow_html=True)
-
+    
                 control_cols = []
                 if "ac_temp" in df.columns:
                     control_cols.append("ac_temp")
                 if "light_numeric" in df.columns:
                     control_cols.append("light_numeric")
-
+    
                 if control_cols:
                     control_long = df.tail(50).melt(
                         id_vars="readable_time",
@@ -282,7 +279,7 @@ def live_dashboard():
                         var_name="Control Type",
                         value_name="Value"
                     )
-
+    
                     control_fig = px.line(
                         control_long,
                         x="readable_time",
@@ -293,10 +290,10 @@ def live_dashboard():
                     )
                     control_fig.update_layout(template="plotly_white", height=340)
                     st.plotly_chart(control_fig, use_container_width=True)
-
+    
                 st.caption("Light prediction: 1 = ON, 0 = OFF.")
                 st.markdown("</div>", unsafe_allow_html=True)
-
+    
             with right:
                 st.markdown(f"""
                 <div class="panel">
@@ -312,18 +309,18 @@ def live_dashboard():
                     <p><b>Light Prediction:</b> {light_status}</p>
                 </div>
                 """, unsafe_allow_html=True)
-
+    
                 st.markdown("<div class='panel'>", unsafe_allow_html=True)
                 st.markdown("<div class='panel-title'>🎥 Real-Time Camera Monitoring</div>", unsafe_allow_html=True)
-
+    
                 video_url = str(latest.get("video_stream_url", "")).strip()
-
+    
                 if video_url:
                     if not video_url.endswith("/video_feed"):
                         video_url = video_url.rstrip("/") + "/video_feed"
-
+    
                     st.markdown(f"[🔗 Open Camera Stream in New Tab]({video_url})")
-
+    
                     st.components.v1.html(
                         f"""
                         <div style="
@@ -335,13 +332,13 @@ def live_dashboard():
                             overflow:hidden;
                         ">
                             <img src="{video_url}"
-                                style="
+                                 style="
                                     width:100%;
                                     height:450px;
                                     object-fit:cover;
                                     object-position:center;
                                     border-radius:14px;
-                                ">
+                                 ">
                             <p style="font-size:13px; color:#64748b;">
                                 If video does not appear, open the stream in a new tab.
                             </p>
@@ -351,15 +348,15 @@ def live_dashboard():
                     )
                 else:
                     st.info("No video stream URL received yet.")
-
+    
                 st.markdown("</div>", unsafe_allow_html=True)
-
+    
                 st.markdown("<div class='panel'>", unsafe_allow_html=True)
                 st.markdown("<div class='panel-title'>🏠 Room Occupancy Analysis</div>", unsafe_allow_html=True)
-
+    
                 occupancy_df = df["occupancy_status"].value_counts().reset_index()
                 occupancy_df.columns = ["Status", "Count"]
-
+    
                 occ_fig = px.pie(
                     occupancy_df,
                     names="Status",
@@ -368,15 +365,15 @@ def live_dashboard():
                 )
                 occ_fig.update_layout(template="plotly_white", height=300)
                 st.plotly_chart(occ_fig, use_container_width=True)
-
+    
                 st.markdown("</div>", unsafe_allow_html=True)
-
+    
                 st.markdown("<div class='panel'>", unsafe_allow_html=True)
                 st.markdown("<div class='panel-title'>🌗 Brightness Condition Analysis</div>", unsafe_allow_html=True)
-
+    
                 brightness_df = df["brightness_level"].value_counts().reset_index()
                 brightness_df.columns = ["Brightness Level", "Count"]
-
+    
                 bright_dist_fig = px.bar(
                     brightness_df,
                     x="Brightness Level",
@@ -385,14 +382,14 @@ def live_dashboard():
                 )
                 bright_dist_fig.update_layout(template="plotly_white", height=300)
                 st.plotly_chart(bright_dist_fig, use_container_width=True)
-
+    
                 st.markdown("</div>", unsafe_allow_html=True)
-
+    
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
             st.markdown("<div class='panel-title'>📋 Historical Sensor Records</div>", unsafe_allow_html=True)
-
+    
             display_df = df.copy()
-
+    
             hide_cols = [
                 "video_stream_url",
                 "url",
@@ -401,9 +398,9 @@ def live_dashboard():
                 "datetime",
                 "occupancy_status"
             ]
-
+    
             display_df = display_df.drop(columns=[c for c in hide_cols if c in display_df.columns])
-
+    
             preferred_cols = [
                 "readable_time",
                 "temperature",
@@ -414,18 +411,23 @@ def live_dashboard():
                 "ac_temp",
                 "mode"
             ]
-
+    
             display_df = display_df[[c for c in preferred_cols if c in display_df.columns]]
             display_df = display_df.rename(columns={"readable_time": "time"})
-
+    
             st.dataframe(display_df.tail(20), use_container_width=True)
-
+    
             st.markdown("</div>", unsafe_allow_html=True)
-
+    
         else:
             st.warning("No data received yet.")
-
+    
     else:
         st.error("Unable to connect Firebase")
 
-live_dashboard()
+if hasattr(st, "fragment"):
+    render_live_dashboard = st.fragment(run_every="10s")(render_live_dashboard)
+else:
+    st.warning("Upgrade Streamlit to 1.37+ for background section refresh without full-page reload.")
+
+render_live_dashboard()
