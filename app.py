@@ -200,26 +200,7 @@ if response.status_code == 200:
         <div class="smart-home-box">
             <h2>🏡 Smart Home Application Overview</h2>
             <p>This dashboard monitors a smart home room using IoT sensors, YOLO camera detection, and AI-based energy control.</p>
-            <div class="room-grid">
-                <div class="room">
-                    <h3>🌡 Climate</h3>
-                    <p>{temperature} °C</p>
-                </div>
-                <div class="room">
-                    <h3>💡 Lighting</h3>
-                    <p>{brightness_level} / {light_status}</p>
-                </div>
-                <div class="room">
-                    <h3>👥 Occupancy</h3>
-                    <p>{occupancy_display}</p>
-                </div>
-                <div class="room">
-                    <h3>🤖 AI Control</h3>
-                    <p>{system_mode}</p>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        
 
         col1, col2, col3, col4, col5 = st.columns(5)
 
