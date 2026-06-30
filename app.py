@@ -17,7 +17,6 @@ st.markdown("""
     color: #0f172a;
 }
 .block-container { padding-top: 1.5rem; }
-
 .hero {
     background: linear-gradient(135deg, #1d4ed8, #06b6d4);
     padding: 32px;
@@ -29,7 +28,6 @@ st.markdown("""
 }
 .hero h1 { font-size: 46px; margin-bottom: 8px; }
 .hero p { font-size: 18px; opacity: 0.95; }
-
 .smart-home-box, .panel {
     background: rgba(255,255,255,0.96);
     padding: 24px;
@@ -38,7 +36,6 @@ st.markdown("""
     border: 1px solid #e2e8f0;
     margin-bottom: 20px;
 }
-
 .card {
     background: rgba(255,255,255,0.96);
     padding: 22px;
@@ -48,8 +45,7 @@ st.markdown("""
     border: 1px solid #e2e8f0;
 }
 .card h3 { color: #475569; font-size: 16px; margin-bottom: 8px; }
-.card h1 { color: #1d4ed8; font-size: 32px; margin: 0; }
-
+.card h1 { color: #1d4ed8; font-size: 30px; margin: 0; }
 .status-active {
     background: #dcfce7;
     color: #166534;
@@ -117,6 +113,10 @@ if response.status_code == 200:
             df["light_status"] = "Unknown"
             df["light_numeric"] = 0
 
+        df["occupancy_status"] = df["people_count"].apply(
+            lambda x: "Occupied" if x > 0 else "Empty"
+        )
+
         latest = df.iloc[-1]
 
         temperature = latest.get("temperature", 0)
@@ -136,6 +136,17 @@ if response.status_code == 200:
             mode_class = "status-standby"
             mode_badge = "⚪ Standby"
             motion_status = "No motion detected"
+
+        if temperature < 24:
+            comfort_status = "❄ Cold"
+        elif temperature <= 28:
+            comfort_status = "😊 Comfortable"
+        else:
+            comfort_status = "🔥 Hot"
+
+        avg_temp = df["temperature"].tail(50).mean()
+        avg_brightness = df["brightness"].tail(50).mean()
+        total_people_events = int((df["people_count"] > 0).sum())
 
         st.markdown("""
         <div class="smart-home-box">
@@ -163,11 +174,28 @@ if response.status_code == 200:
 
         st.write("")
 
+        st.markdown("<div class='panel'>", unsafe_allow_html=True)
+        st.markdown("### ⚡ Energy Saving Summary")
+
+        s1, s2, s3, s4 = st.columns(4)
+
+        with s1:
+            st.markdown(f"<div class='card'><h3>🏠 Room Condition</h3><h1>{comfort_status}</h1></div>", unsafe_allow_html=True)
+        with s2:
+            st.markdown(f"<div class='card'><h3>🌡 Avg Temp</h3><h1>{avg_temp:.1f} °C</h1></div>", unsafe_allow_html=True)
+        with s3:
+            st.markdown(f"<div class='card'><h3>💡 Avg Brightness</h3><h1>{avg_brightness:.1f}</h1></div>", unsafe_allow_html=True)
+        with s4:
+            st.markdown(f"<div class='card'><h3>👥 Occupied Records</h3><h1>{total_people_events}</h1></div>", unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
         left, right = st.columns([1.45, 1])
 
         with left:
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
             st.markdown("### 🌡 Temperature Over Time")
+
             temp_fig = px.line(
                 df.tail(50),
                 x="readable_time",
@@ -181,6 +209,7 @@ if response.status_code == 200:
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
             st.markdown("### 💡 Brightness Over Time")
+
             bright_fig = px.line(
                 df.tail(50),
                 x="readable_time",
@@ -193,11 +222,27 @@ if response.status_code == 200:
             st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div class='panel'>", unsafe_allow_html=True)
+            st.markdown("### 👥 People Detection Over Time")
+
+            people_fig = px.line(
+                df.tail(50),
+                x="readable_time",
+                y="people_count",
+                markers=True,
+                labels={"readable_time": "Time", "people_count": "People Count"}
+            )
+            people_fig.update_layout(template="plotly_white", height=340)
+            st.plotly_chart(people_fig, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("<div class='panel'>", unsafe_allow_html=True)
             st.markdown("### 🤖 Prediction for Control Over Time")
 
             control_cols = []
+
             if "ac_temp" in df.columns:
                 control_cols.append("ac_temp")
+
             if "light_numeric" in df.columns:
                 control_cols.append("light_numeric")
 
@@ -232,6 +277,7 @@ if response.status_code == 200:
                 <p><b>Mode:</b> {system_mode}</p>
                 <p><b>Motion:</b> {motion_status}</p>
                 <p><b>People Detected:</b> {people_count}</p>
+                <p><b>Room Comfort:</b> {comfort_status}</p>
                 <p><b>Brightness:</b> {brightness:.1f} lux</p>
                 <p><b>Brightness Condition:</b> {brightness_level}</p>
                 <p><b>Light Prediction:</b> {light_status}</p>
@@ -279,11 +325,51 @@ if response.status_code == 200:
 
             st.markdown("</div>", unsafe_allow_html=True)
 
+            st.markdown("<div class='panel'>", unsafe_allow_html=True)
+            st.markdown("### 🏠 Occupancy Distribution")
+
+            occupancy_df = df["occupancy_status"].value_counts().reset_index()
+            occupancy_df.columns = ["Status", "Count"]
+
+            occ_fig = px.pie(
+                occupancy_df,
+                names="Status",
+                values="Count",
+                hole=0.45
+            )
+            occ_fig.update_layout(template="plotly_white", height=300)
+            st.plotly_chart(occ_fig, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("<div class='panel'>", unsafe_allow_html=True)
+            st.markdown("### 🌗 Brightness Distribution")
+
+            brightness_df = df["brightness_level"].value_counts().reset_index()
+            brightness_df.columns = ["Brightness Level", "Count"]
+
+            bright_dist_fig = px.bar(
+                brightness_df,
+                x="Brightness Level",
+                y="Count",
+                text="Count"
+            )
+            bright_dist_fig.update_layout(template="plotly_white", height=300)
+            st.plotly_chart(bright_dist_fig, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
         st.markdown("<div class='panel'>", unsafe_allow_html=True)
         st.markdown("### 📋 Latest Sensor Data History")
 
         display_df = df.copy()
-        hide_cols = ["video_stream_url", "url", "timestamp", "light_numeric", "datetime"]
+        hide_cols = [
+            "video_stream_url",
+            "url",
+            "timestamp",
+            "light_numeric",
+            "datetime",
+            "occupancy_status"
+        ]
+
         display_df = display_df.drop(columns=[c for c in hide_cols if c in display_df.columns])
 
         preferred_cols = [
