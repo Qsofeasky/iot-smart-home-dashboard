@@ -41,13 +41,22 @@ st.markdown("""
     opacity: 0.95; 
 }
 
-.smart-home-box, .panel {
+.smart-home-box {
     background: rgba(255,255,255,0.96);
     padding: 24px;
     border-radius: 24px;
     box-shadow: 0 8px 24px rgba(15,23,42,0.08);
     border: 1px solid #e2e8f0;
     margin-bottom: 20px;
+}
+
+.panel {
+    background: transparent;
+    padding: 10px 0px;
+    border-radius: 0px;
+    box-shadow: none;
+    border: none;
+    margin-bottom: 25px;
 }
 
 .panel-title {
