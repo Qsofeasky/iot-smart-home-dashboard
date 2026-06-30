@@ -17,6 +17,7 @@ st.markdown("""
     color: #0f172a;
 }
 .block-container { padding-top: 1.5rem; }
+
 .hero {
     background: linear-gradient(135deg, #1d4ed8, #06b6d4);
     padding: 32px;
@@ -28,14 +29,16 @@ st.markdown("""
 }
 .hero h1 { font-size: 46px; margin-bottom: 8px; }
 .hero p { font-size: 18px; opacity: 0.95; }
-.smart-home-box {
-    background: white;
+
+.smart-home-box, .panel {
+    background: rgba(255,255,255,0.96);
     padding: 24px;
-    border-radius: 26px;
+    border-radius: 24px;
     box-shadow: 0 8px 24px rgba(15,23,42,0.08);
     border: 1px solid #e2e8f0;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
 }
+
 .card {
     background: rgba(255,255,255,0.96);
     padding: 22px;
@@ -46,14 +49,7 @@ st.markdown("""
 }
 .card h3 { color: #475569; font-size: 16px; margin-bottom: 8px; }
 .card h1 { color: #1d4ed8; font-size: 32px; margin: 0; }
-.panel {
-    background: rgba(255,255,255,0.96);
-    padding: 24px;
-    border-radius: 24px;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
-    border: 1px solid #e2e8f0;
-    margin-bottom: 20px;
-}
+
 .status-active {
     background: #dcfce7;
     color: #166534;
@@ -255,14 +251,28 @@ if response.status_code == 200:
 
                 st.components.v1.html(
                     f"""
-                    <div style="background:white; padding:12px; border-radius:18px; text-align:center;">
-                        <img src="{video_url}" width="100%" style="border-radius:14px;">
+                    <div style="
+                        background:white;
+                        padding:12px;
+                        border-radius:18px;
+                        text-align:center;
+                        height:500px;
+                        overflow:hidden;
+                    ">
+                        <img src="{video_url}"
+                             style="
+                                width:100%;
+                                height:450px;
+                                object-fit:cover;
+                                object-position:center;
+                                border-radius:14px;
+                             ">
                         <p style="font-size:13px; color:#64748b;">
                             If video does not appear, open the stream in a new tab.
                         </p>
                     </div>
                     """,
-                    height=430,
+                    height=530,
                 )
             else:
                 st.info("No video stream URL received yet.")
