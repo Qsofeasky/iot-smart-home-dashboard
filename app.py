@@ -115,6 +115,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 @st.fragment(run_every="10s")
+
 def live_dashboard():
 
     response = requests.get(FIREBASE_URL + f"?t={int(time.time())}")
