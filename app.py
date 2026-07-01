@@ -167,9 +167,9 @@ def live_dashboard():
             ac_temp = latest.get("ac_temp", "N/A")
 
             # Determine brightness level
-            if brightness < 200:
+            if brightness < 300:
                 brightness_level = "DARK"
-            elif brightness < 400:
+            elif brightness < 600:
                 brightness_level = "DIM"
             else:
                 brightness_level = "BRIGHT"
