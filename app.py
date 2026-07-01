@@ -151,28 +151,45 @@ def live_dashboard():
                 else:
                     return "BRIGHT"
 
+            # Brightness level
             df["brightness_level"] = df["brightness"].apply(get_brightness_level)
 
-            if "light_status" in df.columns:
-                df["light_numeric"] = df["light_status"].apply(
-                    lambda x: 1 if str(x).upper() == "ON" else 0
-                )
-            else:
-                df["light_status"] = "Unknown"
-                df["light_numeric"] = 0
-
+            # Occupancy
             df["occupancy_status"] = df["people_count"].apply(
                 lambda x: "Occupied" if x > 0 else "Empty"
             )
 
             latest = df.iloc[-1]
 
-            temperature = latest.get("temperature", 0)
-            brightness = latest.get("brightness", 0)
-            brightness_level = latest.get("brightness_level", "Unknown")
+            temperature = float(latest.get("temperature", 0))
+            brightness = float(latest.get("brightness", 0))
             people_count = int(latest.get("people_count", 0))
-            light_status = latest.get("light_status", "Unknown")
             ac_temp = latest.get("ac_temp", "N/A")
+
+            # Determine brightness level
+            if brightness < 300:
+                brightness_level = "DARK"
+            elif brightness < 600:
+                brightness_level = "DIM"
+            else:
+                brightness_level = "BRIGHT"
+
+            # ---------- NEW LIGHT CONTROL LOGIC ----------
+            if people_count == 0:
+                light_status = "OFF"
+            else:
+                if brightness_level == "BRIGHT":
+                    light_status = "OFF"
+                else:
+                    light_status = "ON"
+
+            # Update dataframe so graphs and table use the new logic
+            df.loc[df.index[-1], "light_status"] = light_status
+            df.loc[df.index[-1], "brightness_level"] = brightness_level
+
+            df["light_numeric"] = df["light_status"].apply(
+                lambda x: 1 if str(x).upper() == "ON" else 0
+)
 
             if people_count > 0:
                 system_mode = "AI Control Active"
@@ -368,23 +385,6 @@ def live_dashboard():
                 )
                 occ_fig.update_layout(template="plotly_white", height=300)
                 st.plotly_chart(occ_fig, use_container_width=True)
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                st.markdown("<div class='panel'>", unsafe_allow_html=True)
-                st.markdown("<div class='panel-title'>🌗 Brightness Condition Analysis</div>", unsafe_allow_html=True)
-
-                brightness_df = df["brightness_level"].value_counts().reset_index()
-                brightness_df.columns = ["Brightness Level", "Count"]
-
-                bright_dist_fig = px.bar(
-                    brightness_df,
-                    x="Brightness Level",
-                    y="Count",
-                    text="Count"
-                )
-                bright_dist_fig.update_layout(template="plotly_white", height=300)
-                st.plotly_chart(bright_dist_fig, use_container_width=True)
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
